@@ -2,12 +2,12 @@ package tokoOnline.BarangController;
 import tokoOnline.BackEnd.Barang;
 import tokoOnline.BackEnd.StokHabisException;
 
-public class BarangController {
+public class InventoryController {
     private Barang barang;
     private int totalQtyMasuk = 0;
     private int totalQtyKeluar = 0;
 
-    public BarangController(Barang barang) {
+    public InventoryController(Barang barang) {
         this.barang = barang;
     }
 
@@ -15,7 +15,6 @@ public class BarangController {
         barang.tambahDataBaru(nama, kategori, stok, harga);
     }
 
-    // Menambahkan throws StokHabisException agar bisa ditangkap oleh GUI
     public void prosesBarangMasuk(int modelRow, int qty) throws StokHabisException {
         barang.editStok(modelRow, barang.getStok(modelRow) + qty);
         barang.setWaktuMasuk(modelRow, java.time.LocalDateTime.now()
