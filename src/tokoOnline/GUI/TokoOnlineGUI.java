@@ -10,7 +10,7 @@ import tokoOnline.BackEnd.Barang;
 import tokoOnline.BarangController;
 
 
-public class TokoOnlineGUILama extends JFrame {
+public class TokoOnlineGUI extends JFrame {
     private Barang barang = new Barang();
     private BarangController controller = new BarangController(barang); 
     
@@ -21,7 +21,6 @@ public class TokoOnlineGUILama extends JFrame {
 
     private JLabel lblTotalVal, lblMasukVal, lblKeluarVal;
 
-    // Palette Warna ASLI ANDA (Dipertahankan 100%)
     Color primaryColor = new Color(41, 128, 185);
     Color successColor = new Color(39, 174, 96);
     Color warningColor = new Color(243, 156, 18);
@@ -29,7 +28,7 @@ public class TokoOnlineGUILama extends JFrame {
     Color bgColor = new Color(236, 240, 241);
     Color headerBlue = new Color(52, 152, 219); 
 
-    public TokoOnlineGUILama() {
+    public TokoOnlineGUI() {
         try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch (Exception e) {}
         
         setTitle("Inventory Management System");
@@ -331,6 +330,6 @@ public class TokoOnlineGUILama extends JFrame {
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new TokoOnlineGUILama().setVisible(true));
+        SwingUtilities.invokeLater(() -> new TokoOnlineGUI().setVisible(true));
     }
 }
