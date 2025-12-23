@@ -1,4 +1,4 @@
-package tokoOnline;
+package tokoOnline.GUI;
 
 import javax.swing.*;
 import javax.swing.table.*;
