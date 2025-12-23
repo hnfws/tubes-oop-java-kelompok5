@@ -6,21 +6,19 @@ import java.awt.*;
 import java.awt.event.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import tokoOnline.backend.Barang;
-import tokoOnline.backend.KategoriBarang;
-import tokoOnline.backend.StokHabisException;
-
+import tokoOnline.BackEnd.Barang;
+import tokoOnline.BarangController;
 
 public class TokoOnlineGUI extends JFrame {
     private Barang barang = new Barang();
+    private BarangController controller = new BarangController(barang); 
+    
     private DefaultTableModel model, modelLog;
     private JTable tabelProduk, tabelLogGudang;
     private JTextField txtSearch;
     private JButton btnNotif;
 
     private JLabel lblTotalVal, lblMasukVal, lblKeluarVal;
-    private int totalQtyMasuk = 0;   
-    private int totalQtyKeluar = 0;  
 
     Color primaryColor = new Color(41, 128, 185);
     Color successColor = new Color(39, 174, 96);
@@ -57,30 +55,15 @@ public class TokoOnlineGUI extends JFrame {
         updateTabel();
     }
 
-    private JPanel createCard(String title) {
-        JPanel card = new JPanel(new BorderLayout(5, 5));
-        card.setBackground(Color.WHITE);
-        card.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
-            BorderFactory.createEmptyBorder(15, 20, 15, 20)
-        ));
-
-        JLabel t = new JLabel(title);
-        t.setFont(new Font("Segoe UI", Font.BOLD, 13));
-        t.setForeground(Color.GRAY);
-
-        JLabel v = new JLabel("0");
-        v.setFont(new Font("Segoe UI", Font.BOLD, 28));
-        v.setForeground(headerBlue);
-
-        card.add(t, BorderLayout.NORTH);
-        card.add(v, BorderLayout.CENTER);
-
-        if (title.equals("Total Produk")) lblTotalVal = v;
-        else if (title.equals("Barang Masuk")) lblMasukVal = v;
-        else if (title.equals("Barang Keluar")) lblKeluarVal = v;
-
-        return card;
+    private ImageIcon getScaledIcon(String path, int width, int height) {
+        try {
+            java.net.URL imgURL = getClass().getResource("/tokoOnline/" + path);
+            ImageIcon icon = (imgURL != null) ? new ImageIcon(imgURL) : new ImageIcon(path);
+            if (icon.getImageLoadStatus() != MediaTracker.COMPLETE) return null;
+            Image img = icon.getImage(); 
+            Image newimg = img.getScaledInstance(width, height, java.awt.Image.SCALE_SMOOTH); 
+            return new ImageIcon(newimg);
+        } catch (Exception e) { return null; }
     }
 
     private DefaultTableCellRenderer getBlueHeaderRenderer() {
@@ -98,15 +81,25 @@ public class TokoOnlineGUI extends JFrame {
         };
     }
 
-    private ImageIcon getScaledIcon(String path, int width, int height) {
-        try {
-            java.net.URL imgURL = getClass().getResource("/tokoOnline/" + path);
-            ImageIcon icon = (imgURL != null) ? new ImageIcon(imgURL) : new ImageIcon(path);
-            if (icon.getImageLoadStatus() != MediaTracker.COMPLETE) return null;
-            Image img = icon.getImage(); 
-            Image newimg = img.getScaledInstance(width, height, java.awt.Image.SCALE_SMOOTH); 
-            return new ImageIcon(newimg);
-        } catch (Exception e) { return null; }
+    private JPanel createCard(String title) {
+        JPanel card = new JPanel(new BorderLayout(5, 5));
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(220, 220, 220), 1),
+            BorderFactory.createEmptyBorder(15, 20, 15, 20)
+        ));
+        JLabel t = new JLabel(title);
+        t.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        t.setForeground(Color.GRAY);
+        JLabel v = new JLabel("0");
+        v.setFont(new Font("Segoe UI", Font.BOLD, 28));
+        v.setForeground(headerBlue);
+        card.add(t, BorderLayout.NORTH);
+        card.add(v, BorderLayout.CENTER);
+        if (title.equals("Total Produk")) lblTotalVal = v;
+        else if (title.equals("Barang Masuk")) lblMasukVal = v;
+        else if (title.equals("Barang Keluar")) lblKeluarVal = v;
+        return card;
     }
 
     private String getWaktuSekarang() {
@@ -124,6 +117,7 @@ public class TokoOnlineGUI extends JFrame {
         leftPanel.setOpaque(false);
         txtSearch = new JTextField(15);
         txtSearch.setPreferredSize(new Dimension(150, 35));
+        
         btnNotif = new JButton("0");
         btnNotif.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnNotif.setFocusPainted(false);
@@ -147,7 +141,6 @@ public class TokoOnlineGUI extends JFrame {
         topControlPanel.add(leftPanel, BorderLayout.WEST);
         topControlPanel.add(btnPanel, BorderLayout.EAST);
 
-        // Dashboard Cards (Baru)
         JPanel dashboardPanel = new JPanel(new GridLayout(1, 3, 15, 0));
         dashboardPanel.setOpaque(false);
         dashboardPanel.setPreferredSize(new Dimension(100, 100));
@@ -155,7 +148,6 @@ public class TokoOnlineGUI extends JFrame {
         dashboardPanel.add(createCard("Barang Masuk"));
         dashboardPanel.add(createCard("Barang Keluar"));
 
-        // Gabungkan Control & Dashboard
         JPanel northContainer = new JPanel(new BorderLayout(0, 15));
         northContainer.setOpaque(false);
         northContainer.add(topControlPanel, BorderLayout.NORTH);
@@ -169,27 +161,23 @@ public class TokoOnlineGUI extends JFrame {
         btnStockIn.addActionListener(e -> {
             int row = tabelProduk.getSelectedRow();
             if(row != -1) {
-                int modelRow = tabelProduk.convertRowIndexToModel(row);
                 String val = JOptionPane.showInputDialog("Jumlah Masuk:");
                 if (val != null) {
                     try {
-                        int qty = Integer.parseInt(val);
-                        barang.editStok(modelRow, barang.getStok(modelRow) + qty);
-                        barang.setWaktuMasuk(modelRow, getWaktuSekarang());
-                        totalQtyMasuk += qty; 
+                        controller.prosesBarangMasuk(tabelProduk.convertRowIndexToModel(row), Integer.parseInt(val));
                         updateTabel();
-                    } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Input angka!"); }
+                    } catch (Exception ex) { JOptionPane.showMessageDialog(this, ex.getMessage()); }
                 }
-            } else { JOptionPane.showMessageDialog(this, "Pilih barang di tabel terlebih dahulu!"); }
+            } else { JOptionPane.showMessageDialog(this, "Pilih barang terlebih dahulu!"); }
         });
 
         btnUpdate.addActionListener(e -> {
             int row = tabelProduk.getSelectedRow();
             if(row != -1) {
                 int modelRow = tabelProduk.convertRowIndexToModel(row);
-                String val = JOptionPane.showInputDialog("Harga Baru:", barang.getHarga(modelRow));
+                String val = JOptionPane.showInputDialog("Harga Baru:", controller.getModel().getHarga(modelRow));
                 if (val != null) {
-                    barang.editHarga(modelRow, Integer.parseInt(val));
+                    controller.getModel().editHarga(modelRow, Integer.parseInt(val));
                     updateTabel();
                 }
             }
@@ -216,10 +204,8 @@ public class TokoOnlineGUI extends JFrame {
         form.add(new JLabel("Harga:")); form.add(spinHarga);
 
         if (JOptionPane.showConfirmDialog(this, form, "Tambah Produk", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            if (!txtNama.getText().trim().isEmpty()) {
-                barang.tambahDataBaru(txtNama.getText(), (String)cbKategori.getSelectedItem(), (int)spinStok.getValue(), (int)spinHarga.getValue());
-                updateTabel();
-            }
+            controller.prosesTambahProduk(txtNama.getText(), (String)cbKategori.getSelectedItem(), (int)spinStok.getValue(), (int)spinHarga.getValue());
+            updateTabel();
         }
     }
 
@@ -233,12 +219,10 @@ public class TokoOnlineGUI extends JFrame {
         modelLog = new DefaultTableModel(kolomLog, 0);
         tabelLogGudang = new JTable(modelLog);
         tabelLogGudang.setRowHeight(40);
-        tabelLogGudang.setFont(new Font("Segoe UI", Font.PLAIN, 14));
         tabelLogGudang.getTableHeader().setPreferredSize(new Dimension(100, 45));
         tabelLogGudang.getTableHeader().setDefaultRenderer(getBlueHeaderRenderer());
 
         btnOut.addActionListener(e -> tampilkanFormBarangKeluar());
-
         panel.add(btnOut, BorderLayout.NORTH);
         panel.add(new JScrollPane(tabelLogGudang), BorderLayout.CENTER);
         return panel;
@@ -247,46 +231,27 @@ public class TokoOnlineGUI extends JFrame {
     private void tampilkanFormBarangKeluar() {
         int row = tabelProduk.getSelectedRow();
         if (row == -1) {
-            JOptionPane.showMessageDialog(this, "Silakan pilih barang yang ingin dikurangi di tabel Admin terlebih dahulu.");
+            JOptionPane.showMessageDialog(this, "Pilih barang di tabel Admin!");
             return;
         }
-
         int modelRow = tabelProduk.convertRowIndexToModel(row);
-        int stokSaatIni = barang.getStok(modelRow);
+        int stokSaatIni = controller.getModel().getStok(modelRow); 
 
         JPanel form = new JPanel(new GridLayout(3, 2, 10, 10));
-        JSpinner spinQty = new JSpinner(new SpinnerNumberModel(1, 1, stokSaatIni, 1));
+        JSpinner spinQty = new JSpinner(new SpinnerNumberModel(1, 1, Math.max(1, stokSaatIni), 1));
         JComboBox<String> cbKet = new JComboBox<>(new String[]{"Dijual", "Dipindahkan"});
+        form.add(new JLabel("Barang:")); form.add(new JLabel(controller.getModel().getNamaBarang(modelRow)));
+        form.add(new JLabel("Jumlah:")); form.add(spinQty);
+        form.add(new JLabel("Ket:")); form.add(cbKet);
 
-        form.add(new JLabel("Nama Barang:"));
-        form.add(new JLabel("<html><b>" + barang.getNamaBarang(modelRow) + "</b></html>"));
-        form.add(new JLabel("Jumlah Keluar:"));
-        form.add(spinQty);
-        form.add(new JLabel("Keterangan:"));
-        form.add(cbKet);
-
-        if (JOptionPane.showConfirmDialog(this, form, "Form Kurangi Stok", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+        if (JOptionPane.showConfirmDialog(this, form, "Kurangi Stok", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
             try {
                 int qty = (int) spinQty.getValue();
-                barang.editStok(modelRow, stokSaatIni - qty);
-                barang.setWaktuKeluar(modelRow, getWaktuSekarang());
-                totalQtyKeluar += qty; 
-                modelLog.insertRow(0, new Object[]{getWaktuSekarang(), modelRow, barang.getNamaBarang(modelRow), qty, ((String)cbKet.getSelectedItem()).toUpperCase()});
+                controller.prosesBarangKeluar(modelRow, qty);
+                modelLog.insertRow(0, new Object[]{getWaktuSekarang(), modelRow, controller.getModel().getNamaBarang(modelRow), qty, cbKet.getSelectedItem()});
                 updateTabel();
-            } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Gagal memproses data."); }
+            } catch (Exception ex) { JOptionPane.showMessageDialog(this, ex.getMessage()); }
         }
-    }
-
-    private void tampilkanNotifikasi() {
-        StringBuilder pesan = new StringBuilder();
-        int count = 0;
-        for (int i = 0; i < barang.getJmlBarang(); i++) {
-            if (barang.getStok(i) < 5) {
-                pesan.append("⚠️ ").append(barang.getNamaBarang(i)).append(" (Stok: ").append(barang.getStok(i)).append(")\n");
-                count++;
-            }
-        }
-        JOptionPane.showMessageDialog(this, count == 0 ? "Stok Aman ✅" : pesan.toString(), "Notifikasi", JOptionPane.WARNING_MESSAGE);
     }
 
     private void setupTableAdmin() {
@@ -294,12 +259,8 @@ public class TokoOnlineGUI extends JFrame {
         model = new DefaultTableModel(kolom, 0);
         tabelProduk = new JTable(model);
         tabelProduk.setRowHeight(40);
-        tabelProduk.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        tabelProduk.setGridColor(new Color(189, 195, 199));
-        tabelProduk.setShowGrid(true);
         tabelProduk.getTableHeader().setPreferredSize(new Dimension(100, 45));
         tabelProduk.getTableHeader().setDefaultRenderer(getBlueHeaderRenderer());
-
         tabelProduk.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
@@ -324,19 +285,33 @@ public class TokoOnlineGUI extends JFrame {
         return btn;
     }
 
+    private void tampilkanNotifikasi() {
+        StringBuilder pesan = new StringBuilder();
+        int count = 0;
+        for (int i = 0; i < controller.getModel().getJmlBarang(); i++) {
+            if (controller.getModel().getStok(i) < 5) {
+                pesan.append("⚠️ ").append(controller.getModel().getNamaBarang(i))
+                     .append(" (Stok: ").append(controller.getModel().getStok(i)).append(")\n");
+                count++;
+            }
+        }
+        JOptionPane.showMessageDialog(this, count == 0 ? "Stok Aman ✅" : pesan.toString(), "Notifikasi", JOptionPane.WARNING_MESSAGE);
+    }
+
     private void updateTabel() {
         model.setRowCount(0);
         int warningCount = 0;
-        for (int i = 0; i < barang.getJmlBarang(); i++) {
-            int s = barang.getStok(i);
+        for (int i = 0; i < controller.getModel().getJmlBarang(); i++) {
+            int s = controller.getModel().getStok(i);
             if (s < 5) warningCount++;
             String status = (s == 0) ? "HABIS" : (s < 5) ? "WARNING" : "AMAN";
-            model.addRow(new Object[]{i, barang.getNamaBarang(i), s, "Rp " + barang.getHarga(i), status, barang.getKategori(i), barang.getWaktuMasuk(i), barang.getWaktuKeluar(i)});
+            model.addRow(new Object[]{i, controller.getModel().getNamaBarang(i), s, "Rp " + controller.getModel().getHarga(i), status, 
+                controller.getModel().getKategori(i), controller.getModel().getWaktuMasuk(i), controller.getModel().getWaktuKeluar(i)});
         }
 
-        if (lblTotalVal != null) lblTotalVal.setText(String.valueOf(barang.getJmlBarang()));
-        if (lblMasukVal != null) lblMasukVal.setText(String.valueOf(totalQtyMasuk));
-        if (lblKeluarVal != null) lblKeluarVal.setText(String.valueOf(totalQtyKeluar));
+        if (lblTotalVal != null) lblTotalVal.setText(String.valueOf(controller.getTotalJenisProduk()));
+        if (lblMasukVal != null) lblMasukVal.setText(String.valueOf(controller.getTotalQtyMasuk()));
+        if (lblKeluarVal != null) lblKeluarVal.setText(String.valueOf(controller.getTotalQtyKeluar()));
 
         if (btnNotif != null) {
             btnNotif.setText((btnNotif.getIcon() == null ? "🔔 " : "") + warningCount); 
