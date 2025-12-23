@@ -14,7 +14,6 @@ public class TokoOnlineGUI extends JFrame {
     private JTextField txtSearch;
     private JButton btnNotif;
 
-    // Palette Warna
     Color primaryColor = new Color(41, 128, 185);
     Color successColor = new Color(39, 174, 96);
     Color warningColor = new Color(243, 156, 18);
@@ -22,7 +21,6 @@ public class TokoOnlineGUI extends JFrame {
     Color bgColor = new Color(236, 240, 241);
 
     public TokoOnlineGUI() {
-        // Membuat tampilan mengikuti sistem operasi (Windows/Mac/Linux)
         try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); } catch (Exception e) {}
         
         setTitle("Inventory Management System v2.0");
@@ -31,7 +29,6 @@ public class TokoOnlineGUI extends JFrame {
         setLocationRelativeTo(null);
         getContentPane().setBackground(bgColor);
 
-        // Header
         JPanel headerPanel = new JPanel();
         headerPanel.setBackground(primaryColor);
         headerPanel.setPreferredSize(new Dimension(100, 80));
@@ -51,7 +48,6 @@ public class TokoOnlineGUI extends JFrame {
         updateTabel();
     }
 
-    // Fungsi untuk memproses gambar icon
     private ImageIcon getScaledIcon(String path, int width, int height) {
         try {
             ImageIcon icon = new ImageIcon(path); 
@@ -75,29 +71,24 @@ public class TokoOnlineGUI extends JFrame {
         JPanel topControlPanel = new JPanel(new BorderLayout());
         topControlPanel.setOpaque(false);
 
-        // Sisi Kiri: Search Bar + Icon Notif
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         leftPanel.setOpaque(false);
         
         txtSearch = new JTextField(15);
         txtSearch.setPreferredSize(new Dimension(150, 35));
         
-        // --- TOMBOL NOTIF (VERSI TRANSPARAN) ---
         btnNotif = new JButton("0");
         btnNotif.setFont(new Font("Segoe UI", Font.BOLD, 14));
         btnNotif.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
-        // Menghilangkan background & border agar hanya icon yang terlihat
         btnNotif.setContentAreaFilled(false); 
         btnNotif.setBorderPainted(false);
         btnNotif.setFocusPainted(false);
         btnNotif.setOpaque(false);
 
-        // Load Gambar Lonceng
         ImageIcon bellIcon = getScaledIcon("notification.png", 24, 24); 
         if(bellIcon != null) btnNotif.setIcon(bellIcon); 
         
-        // Posisi angka di sebelah kanan icon
         btnNotif.setHorizontalTextPosition(SwingConstants.RIGHT);
 
         btnNotif.addActionListener(e -> tampilkanNotifikasi());
@@ -111,7 +102,6 @@ public class TokoOnlineGUI extends JFrame {
             public void keyReleased(KeyEvent e) { searchTable(txtSearch.getText()); }
         });
 
-        // Sisi Kanan: Buttons
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
         btnPanel.setOpaque(false);
         JButton btnAdd = createStyledButton("Tambah Produk", successColor);
@@ -128,7 +118,6 @@ public class TokoOnlineGUI extends JFrame {
         setupTable();
         JScrollPane scroll = new JScrollPane(tabelProduk);
 
-        // Logic Buttons
         btnAdd.addActionListener(e -> {
             try {
                 String nama = JOptionPane.showInputDialog("Nama Produk:");
