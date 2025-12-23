@@ -1,4 +1,4 @@
-package com.mycompany.tokoOnline;
+package tokoOnline.BackEnd;
 
 import java.util.ArrayList;
 
@@ -19,7 +19,7 @@ public class Barang {
         tambahDataBaru("Gelang Tali", "Gelang", 1, 6000);
     }
 
-    private void tambahDataBaru(String nama, String kategori, int s, int h) {
+    public void tambahDataBaru(String nama, String kategori, int s, int h) {
         namaBarang.add(nama);
         stok.add(s);
         harga.add(h);

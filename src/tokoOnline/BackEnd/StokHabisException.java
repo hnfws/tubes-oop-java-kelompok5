@@ -1,4 +1,4 @@
-package com.mycompany.tokoOnline;
+package tokoOnline.BackEnd;
 
 public class StokHabisException extends Exception {
     public StokHabisException(String namaBarang) {
