@@ -1,12 +1,15 @@
 package tokoOnline.GUI;
 
-import javax.swing.*;
-import javax.swing.table.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import tokoOnline.BackEnd.Barang;
+import java.util.Date;
+import javax.swing.*;
+import javax.swing.table.*;
+import javax.swing.RowFilter;
+import tokoOnline.Barang.*;
 import tokoOnline.BarangController.*;
 
 
@@ -20,6 +23,7 @@ public class TokoOnlineGUI extends JFrame {
     private JButton btnNotif;
 
     private JLabel lblTotalVal, lblMasukVal, lblKeluarVal;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy");
 
     Color primaryColor = new Color(41, 128, 185);
     Color successColor = new Color(39, 174, 96);
@@ -162,17 +166,27 @@ public class TokoOnlineGUI extends JFrame {
         btnAdd.addActionListener(e -> tampilkanFormTambahProduk());
         
         btnStockIn.addActionListener(e -> {
-            int row = tabelProduk.getSelectedRow();
-            if(row != -1) {
-                String val = JOptionPane.showInputDialog("Jumlah Masuk:");
-                if (val != null) {
-                    try {
-                        controller.prosesBarangMasuk(tabelProduk.convertRowIndexToModel(row), Integer.parseInt(val));
-                        updateTabel();
-                    } catch (Exception ex) { JOptionPane.showMessageDialog(this, ex.getMessage()); }
-                }
-            } else { JOptionPane.showMessageDialog(this, "Pilih barang terlebih dahulu!"); }
-        });
+    int row = tabelProduk.getSelectedRow();
+    if(row != -1) {
+        JPanel form = new JPanel(new GridLayout(2, 2, 10, 10));
+        JTextField txtJumlah = new JTextField();
+        JSpinner spinTanggal = new JSpinner(new SpinnerDateModel());
+        spinTanggal.setEditor(new JSpinner.DateEditor(spinTanggal, "dd-MM-yyyy"));
+
+        form.add(new JLabel("Jumlah Masuk:")); form.add(txtJumlah);
+        form.add(new JLabel("Tanggal Masuk:")); form.add(spinTanggal);
+
+        if (JOptionPane.showConfirmDialog(this, form, "Barang Masuk", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            try {
+                int qty = Integer.parseInt(txtJumlah.getText());
+                Date tanggal = (Date) spinTanggal.getValue();
+                controller.prosesBarangMasuk(tabelProduk.convertRowIndexToModel(row), qty, tanggal);
+                updateTabel();
+            } catch (Exception ex) { JOptionPane.showMessageDialog(this, ex.getMessage()); }
+        }
+    } else { JOptionPane.showMessageDialog(this, "Pilih barang terlebih dahulu!"); }
+});
+
 
         btnUpdate.addActionListener(e -> {
             int row = tabelProduk.getSelectedRow();
@@ -196,21 +210,30 @@ public class TokoOnlineGUI extends JFrame {
     }
 
     private void tampilkanFormTambahProduk() {
-        JPanel form = new JPanel(new GridLayout(4, 2, 10, 10));
-        JTextField txtNama = new JTextField();
-        JComboBox<String> cbKategori = new JComboBox<>(new String[]{"Aksesoris", "Cincin", "Gelang", "Kalung", "Anting"});
-        JSpinner spinStok = new JSpinner(new SpinnerNumberModel(1, 0, 9999, 1));
-        JSpinner spinHarga = new JSpinner(new SpinnerNumberModel(1000, 0, 100000000, 500));
-        form.add(new JLabel("Nama Produk:")); form.add(txtNama);
-        form.add(new JLabel("Kategori:")); form.add(cbKategori);
-        form.add(new JLabel("Stok:")); form.add(spinStok);
-        form.add(new JLabel("Harga:")); form.add(spinHarga);
+    JPanel form = new JPanel(new GridLayout(5, 2, 10, 10));
+    JTextField txtNama = new JTextField();
+    JComboBox<String> cbKategori = new JComboBox<>(new String[]{"Aksesoris", "Cincin", "Gelang", "Kalung", "Anting"});
+    JSpinner spinStok = new JSpinner(new SpinnerNumberModel(1, 0, 9999, 1));
+    JSpinner spinHarga = new JSpinner(new SpinnerNumberModel(1000, 0, 100000000, 500));
+    
+    // --- Tambahan tanggal ---
+    JSpinner spinTanggal = new JSpinner(new SpinnerDateModel());
+    spinTanggal.setEditor(new JSpinner.DateEditor(spinTanggal, "dd-MM-yyyy"));
 
-        if (JOptionPane.showConfirmDialog(this, form, "Tambah Produk", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            controller.prosesTambahProduk(txtNama.getText(), (String)cbKategori.getSelectedItem(), (int)spinStok.getValue(), (int)spinHarga.getValue());
-            updateTabel();
-        }
+    form.add(new JLabel("Nama Produk:")); form.add(txtNama);
+    form.add(new JLabel("Kategori:")); form.add(cbKategori);
+    form.add(new JLabel("Stok:")); form.add(spinStok);
+    form.add(new JLabel("Harga:")); form.add(spinHarga);
+    form.add(new JLabel("Tanggal:")); form.add(spinTanggal);
+
+    if (JOptionPane.showConfirmDialog(this, form, "Tambah Produk", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+        Date tanggal = (Date) spinTanggal.getValue();
+        controller.prosesTambahProduk(txtNama.getText(), (String)cbKategori.getSelectedItem(), 
+                                      (int)spinStok.getValue(), (int)spinHarga.getValue(), tanggal);
+        updateTabel();
     }
+}
+
 
     private JPanel panelGudang() {
         JPanel panel = new JPanel(new BorderLayout(15, 15));
@@ -232,30 +255,36 @@ public class TokoOnlineGUI extends JFrame {
     }
 
     private void tampilkanFormBarangKeluar() {
-        int row = tabelProduk.getSelectedRow();
-        if (row == -1) {
-            JOptionPane.showMessageDialog(this, "Pilih barang di tabel Admin!");
-            return;
-        }
-        int modelRow = tabelProduk.convertRowIndexToModel(row);
-        int stokSaatIni = controller.getModel().getStok(modelRow); 
-
-        JPanel form = new JPanel(new GridLayout(3, 2, 10, 10));
-        JSpinner spinQty = new JSpinner(new SpinnerNumberModel(1, 1, Math.max(1, stokSaatIni), 1));
-        JComboBox<String> cbKet = new JComboBox<>(new String[]{"Dijual", "Dipindahkan"});
-        form.add(new JLabel("Barang:")); form.add(new JLabel(controller.getModel().getNamaBarang(modelRow)));
-        form.add(new JLabel("Jumlah:")); form.add(spinQty);
-        form.add(new JLabel("Ket:")); form.add(cbKet);
-
-        if (JOptionPane.showConfirmDialog(this, form, "Kurangi Stok", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
-            try {
-                int qty = (int) spinQty.getValue();
-                controller.prosesBarangKeluar(modelRow, qty);
-                modelLog.insertRow(0, new Object[]{getWaktuSekarang(), modelRow, controller.getModel().getNamaBarang(modelRow), qty, cbKet.getSelectedItem()});
-                updateTabel();
-            } catch (Exception ex) { JOptionPane.showMessageDialog(this, ex.getMessage()); }
-        }
+    int row = tabelProduk.getSelectedRow();
+    if (row == -1) {
+        JOptionPane.showMessageDialog(this, "Pilih barang di tabel Admin!");
+        return;
     }
+    int modelRow = tabelProduk.convertRowIndexToModel(row);
+    int stokSaatIni = controller.getModel().getStok(modelRow); 
+
+    JPanel form = new JPanel(new GridLayout(4, 2, 10, 10));
+    JSpinner spinQty = new JSpinner(new SpinnerNumberModel(1, 1, Math.max(1, stokSaatIni), 1));
+    JComboBox<String> cbKet = new JComboBox<>(new String[]{"Dijual", "Dipindahkan"});
+    JSpinner spinTanggal = new JSpinner(new SpinnerDateModel());
+    spinTanggal.setEditor(new JSpinner.DateEditor(spinTanggal, "dd-MM-yyyy"));
+
+    form.add(new JLabel("Barang:")); form.add(new JLabel(controller.getModel().getNamaBarang(modelRow)));
+    form.add(new JLabel("Jumlah:")); form.add(spinQty);
+    form.add(new JLabel("Ket:")); form.add(cbKet);
+    form.add(new JLabel("Tanggal:")); form.add(spinTanggal);
+
+    if (JOptionPane.showConfirmDialog(this, form, "Kurangi Stok", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+        try {
+            int qty = (int) spinQty.getValue();
+            Date tanggal = (Date) spinTanggal.getValue();
+            controller.prosesBarangKeluar(modelRow, qty, tanggal);
+            modelLog.insertRow(0, new Object[]{dateFormat.format(tanggal), modelRow, controller.getModel().getNamaBarang(modelRow), qty, cbKet.getSelectedItem()});
+            updateTabel();
+        } catch (Exception ex) { JOptionPane.showMessageDialog(this, ex.getMessage()); }
+    }
+}
+
 
     private void setupTableAdmin() {
         String[] kolom = {"ID", "Nama Produk", "Stok", "Harga", "Status", "Kategori", "Terakhir Masuk", "Terakhir Keluar"};
@@ -293,7 +322,7 @@ public class TokoOnlineGUI extends JFrame {
         int count = 0;
         for (int i = 0; i < controller.getModel().getJmlBarang(); i++) {
             if (controller.getModel().getStok(i) < 5) {
-                pesan.append("⚠️ ").append(controller.getModel().getNamaBarang(i))
+                pesan.append("⚠ ").append(controller.getModel().getNamaBarang(i))
                      .append(" (Stok: ").append(controller.getModel().getStok(i)).append(")\n");
                 count++;
             }
