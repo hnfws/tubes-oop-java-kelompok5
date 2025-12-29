@@ -1,4 +1,6 @@
 package tokoOnline.BarangController;
+
+import java.util.Date;
 import tokoOnline.BackEnd.Barang;
 import tokoOnline.BackEnd.StokHabisException;
 
@@ -11,21 +13,22 @@ public class BarangController {
         this.barang = barang;
     }
 
-    public void prosesTambahProduk(String nama, String kategori, int stok, int harga) {
-        barang.tambahDataBaru(nama, kategori, stok, harga);
+   // --- Tambah produk baru dengan tanggal ---
+    public void prosesTambahProduk(String nama, String kategori, int stok, int harga, Date tanggal) {
+        barang.tambahDataBaru(nama, kategori, stok, harga, tanggal);
     }
 
-    public void prosesBarangMasuk(int modelRow, int qty) throws StokHabisException {
+    // --- Barang masuk dengan tanggal ---
+    public void prosesBarangMasuk(int modelRow, int qty, Date tanggal) throws StokHabisException {
         barang.editStok(modelRow, barang.getStok(modelRow) + qty);
-        barang.setWaktuMasuk(modelRow, java.time.LocalDateTime.now()
-                .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm dd-MM-yyyy")));
+        barang.setWaktuMasuk(modelRow, tanggal);
         totalQtyMasuk += qty;
     }
 
-    public void prosesBarangKeluar(int modelRow, int qty) throws StokHabisException {
+    // --- Barang keluar dengan tanggal ---
+    public void prosesBarangKeluar(int modelRow, int qty, Date tanggal) throws StokHabisException {
         barang.editStok(modelRow, barang.getStok(modelRow) - qty);
-        barang.setWaktuKeluar(modelRow, java.time.LocalDateTime.now()
-                .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm dd-MM-yyyy")));
+        barang.setWaktuKeluar(modelRow, tanggal);
         totalQtyKeluar += qty;
     }
 
