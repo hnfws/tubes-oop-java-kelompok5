@@ -9,7 +9,7 @@ import java.util.Date;
 import javax.swing.*;
 import javax.swing.table.*;
 import javax.swing.RowFilter;
-import tokoOnline.Barang.*;
+import tokoOnline.BackEnd.Barang;
 import tokoOnline.BarangController.*;
 
 
